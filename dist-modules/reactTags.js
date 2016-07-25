@@ -67,7 +67,11 @@ var ReactTags = _react2.default.createClass({
     removeComponent: _react2.default.PropTypes.func,
     autocomplete: _react2.default.PropTypes.oneOfType([_react2.default.PropTypes.bool, _react2.default.PropTypes.number]),
     readOnly: _react2.default.PropTypes.bool,
-    classNames: _react2.default.PropTypes.object
+    classNames: _react2.default.PropTypes.object,
+    exactMatch: _react2.default.PropTypes.bool,
+    allowDuplicateTags: _react2.default.PropTypes.bool,
+    stopSuggestionClickPropagation: _react2.default.PropTypes.bool,
+    suggestionFilterType: _react2.default.PropTypes.oneOf(['startsWith', 'contains'])
   },
   getDefaultProps: function getDefaultProps() {
     return {
@@ -80,7 +84,11 @@ var ReactTags = _react2.default.createClass({
       allowDeleteFromEmptyInput: true,
       minQueryLength: 2,
       autocomplete: false,
-      readOnly: false
+      readOnly: false,
+      exactMatch: false,
+      allowDuplicateTags: true,
+      stopSuggestionClickPropagation: false,
+      suggestionFilterType: 'startsWith'
     };
   },
   componentWillMount: function componentWillMount() {
@@ -98,16 +106,30 @@ var ReactTags = _react2.default.createClass({
       suggestions: this.props.suggestions,
       query: "",
       selectedIndex: -1,
-      selectionMode: false
+      selectionMode: false,
+      isFocused: false
     };
   },
-  filteredSuggestions: function filteredSuggestions(query, suggestions) {
-    return suggestions.filter(function (item) {
-      return item.toLowerCase().indexOf(query.toLowerCase()) === 0;
-    });
+  filteredSuggestions: function filteredSuggestions(query, props) {
+    var matches;
+    if (props.suggestionFilterType === 'startsWith') {
+      matches = function matches(idx) {
+        return idx === 0;
+      };
+    } else {
+      matches = function matches(idx) {
+        return idx !== -1;
+      };
+    }
+
+    return props.suggestions.filter(function (item) {
+      return matches(item.toLowerCase().indexOf(query.toLowerCase())) && (props.allowDuplicateTags || props.tags.map(function (tag) {
+        return tag.text;
+      }).indexOf(item) === -1);
+    }.bind(this));
   },
   componentWillReceiveProps: function componentWillReceiveProps(props) {
-    var suggestions = this.filteredSuggestions(this.state.query, props.suggestions);
+    var suggestions = this.filteredSuggestions(this.state.query, props);
     this.setState({
       suggestions: suggestions,
       classNames: _extends({}, DefaultClassNames, props.classNames)
@@ -124,17 +146,22 @@ var ReactTags = _react2.default.createClass({
     }
 
     var query = e.target.value.trim();
-    var suggestions = this.filteredSuggestions(query, this.props.suggestions);
+    var suggestions = this.filteredSuggestions(query, this.props);
 
     this.setState({
       query: query,
       suggestions: suggestions
     });
   },
+  handleFocus: function handleFocus(e) {
+    this.setState({ isFocused: true });
+  },
   handleBlur: function handleBlur(e) {
+    this.setState({ isFocused: false });
     var value = e.target.value.trim();
     if (this.props.handleInputBlur && value.length) {
       this.props.handleInputBlur(value);
+      this.refs.input.value = "";
     }
   },
   handleKeyDown: function handleKeyDown(e) {
@@ -216,11 +243,15 @@ var ReactTags = _react2.default.createClass({
   addTag: function addTag(tag) {
     var input = this.refs.input;
 
-    if (this.props.autocomplete) {
-      var possibleMatches = this.filteredSuggestions(tag, this.props.suggestions);
+    if (this.props.autocomplete || this.props.exactMatch) {
+      var possibleMatches = this.filteredSuggestions(tag, this.props);
 
       if (this.props.autocomplete === 1 && possibleMatches.length === 1 || this.props.autocomplete === true && possibleMatches.length) {
         tag = possibleMatches[0];
+      }
+
+      if (this.props.exactMatch && (!possibleMatches.length || tag !== possibleMatches[0])) {
+        return;
       }
     }
 
@@ -238,7 +269,8 @@ var ReactTags = _react2.default.createClass({
     input.value = "";
     input.focus();
   },
-  handleSuggestionClick: function handleSuggestionClick(i, e) {
+  handleSuggestionMouseDown: function handleSuggestionMouseDown(i, e) {
+    e.preventDefault();
     this.addTag(this.state.suggestions[i]);
   },
   handleSuggestionHover: function handleSuggestionHover(i, e) {
@@ -291,6 +323,7 @@ var ReactTags = _react2.default.createClass({
         type: 'text',
         placeholder: placeholder,
         'aria-label': placeholder,
+        onFocus: this.handleFocus,
         onBlur: this.handleBlur,
         onChange: this.handleChange,
         onKeyDown: this.handleKeyDown,
@@ -298,11 +331,14 @@ var ReactTags = _react2.default.createClass({
       _react2.default.createElement(_Suggestions2.default, { query: query,
         suggestions: suggestions,
         selectedIndex: selectedIndex,
-        handleClick: this.handleSuggestionClick,
+        handleMouseDown: this.handleSuggestionMouseDown,
         handleHover: this.handleSuggestionHover,
         minQueryLength: this.props.minQueryLength,
         shouldRenderSuggestions: this.props.shouldRenderSuggestions,
-        classNames: this.state.classNames })
+        classNames: this.state.classNames,
+        isFocused: this.state.isFocused,
+        stopSuggestionClickPropagation: this.props.stopSuggestionClickPropagation
+      })
     ) : null;
 
     return _react2.default.createElement(

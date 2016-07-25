@@ -31,7 +31,6 @@ describe("ReactTags", () => {
   });
 
   it("invokes the onBlur event", () => {
-
     const handleInputBlur = spy();
     const $el = mount(mockItem());
 
@@ -50,6 +49,16 @@ describe("ReactTags", () => {
     expect(handleInputBlur.callCount).to.equal(1);
     expect(handleInputBlur.calledWith('Example')).to.be.true;
     expect($el.find('.ReactTags__tagInput input').get(0).value).to.be.empty;
-
   });
+
+  it("does not add a tag unless an exact match is found", () => {
+    const $el = mount(mockItem({
+      exactMatch: true
+    }));
+
+    $el.find('.ReactTags__tagInput input').get(0).value = 'Example';
+
+    expect($el.text()).to.have.string("Apple");
+  });
+
 });

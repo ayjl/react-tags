@@ -39,7 +39,7 @@ var Suggestions = function (_Component) {
       var _this2 = _this;
       var props = _this2.props;
 
-      var minQueryLength = props.minQueryLength || 2;
+      var minQueryLength = props.minQueryLength;
       return props.query.length >= minQueryLength;
     }, _this.render = function () {
       var _this3 = _this;
@@ -49,7 +49,7 @@ var Suggestions = function (_Component) {
         return _react2.default.createElement(
           "li",
           { key: i,
-            onClick: props.handleClick.bind(null, i),
+            onMouseDown: props.handleMouseDown.bind(null, i),
             onMouseOver: props.handleHover.bind(null, i),
             className: i == props.selectedIndex ? "active" : "" },
           _react2.default.createElement("span", { dangerouslySetInnerHTML: this.markIt(item, props.query) })
@@ -58,7 +58,7 @@ var Suggestions = function (_Component) {
 
       // use the override, if provided
       var shouldRenderSuggestions = props.shouldRenderSuggestions || _this.shouldRenderSuggestions;
-      if (suggestions.length === 0 || !shouldRenderSuggestions(props.query)) {
+      if (!props.isFocused || suggestions.length === 0 || !shouldRenderSuggestions(props.query)) {
         return null;
       }
 
@@ -83,8 +83,9 @@ Suggestions.propTypes = {
   query: _react2.default.PropTypes.string.isRequired,
   selectedIndex: _react2.default.PropTypes.number.isRequired,
   suggestions: _react2.default.PropTypes.array.isRequired,
-  handleClick: _react2.default.PropTypes.func.isRequired,
+  handleMouseDown: _react2.default.PropTypes.func.isRequired,
   handleHover: _react2.default.PropTypes.func.isRequired,
+  isFocused: _react2.default.PropTypes.bool.isRequired,
   minQueryLength: _react2.default.PropTypes.number,
   shouldRenderSuggestions: _react2.default.PropTypes.func,
   classNames: _react2.default.PropTypes.object

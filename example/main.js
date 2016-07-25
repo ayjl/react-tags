@@ -65,7 +65,13 @@ var App = React.createClass({
                     handleDelete={this.handleDelete}
                     handleAddition={this.handleAddition}
                     handleDrag={this.handleDrag}
-                    minQueryLength={2} />
+                    minQueryLength={0}
+                    allowDuplicateTags={false} 
+                    exactMatch={true}
+                    stopSuggestionClickPropagation={true}
+                    autocomplete={true}
+                    suggestionFilterType='contains'
+                    />
                 <pre>
                     <code>{JSON.stringify(tags, null, 2)}</code>
                 </pre>

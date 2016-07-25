@@ -9,9 +9,12 @@ function mockItem(overrides) {
     query: "ang",
     suggestions: ["Banana", "Mango", "Pear", "Apricot"],
     selectedIndex: 1,
-    handleClick: noop,
+    minQueryLength: 2,
+    handleMouseDown: noop,
     handleHover: noop,
-    classNames: { suggestions: "foo" }
+    classNames: { suggestions: "foo" },
+    isFocused: false,
+    requireFocusToShowSuggestions: false
   };
   const props = Object.assign({}, defaults, overrides);
   return <Suggestions {...props} />
@@ -57,4 +60,29 @@ describe("Suggestions", function() {
     const $el = shallow(mockItem());
     expect($el.find("li.active").find("span").html()).to.equal("<span>M<mark>ang</mark>o</span>");
   });
+
+  it("shows suggestions when minQueryLength is zero", function() {
+    const $el = shallow(mockItem({
+      minQueryLength: 0,
+      query: ""
+    }));
+    expect($el.find('.foo').length).to.equal(1);
+    expect($el.find('li').length).to.equal(4);
+  });
+
+  it("only shows suggestions when focused", function() {
+    const $el = shallow(mockItem({
+      minQueryLength: 0,
+      query: "",
+      isFocused: false,
+      requireFocusToShowSuggestions: true
+    }));
+    expect($el.find('.foo').length).to.equal(0);
+    expect($el.find('li').length).to.equal(0);
+
+    $el.setProps({ isFocused: true });
+    expect($el.find('.foo').length).to.equal(1);
+    expect($el.find('li').length).to.equal(4);
+  });
+
 });
